@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zıpır Bilmeceler!</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #e8f4fd;
+    --card-bg: #ffffff;
+    --card-border: #b8d9f0;
+    --accent: #1a6fa8;
+    --accent-light: #4a9fd4;
+    --accent-pale: #d0eaf9;
+    --text: #1a2a3a;
+    --text-muted: #5a7a9a;
+    --correct: #1a7a4a;
+    --correct-pale: #d0f0e0;
+    --correct-border: #5abf8a;
+    --radius: 16px;
+    --shadow: 0 2px 12px rgba(26,111,168,0.10);
+    --shadow-hover: 0 8px 28px rgba(26,111,168,0.18);
+  }
+
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 24px 16px 48px;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  .emoji-bg {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  .emoji-bg span {
+    position: absolute;
+    opacity: 0.12;
+    user-select: none;
+    animation: floaty 8s ease-in-out infinite;
+  }
+
+  @keyframes floaty {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-10px) rotate(8deg); }
+  }
+
+  .page-content { position: relative; z-index: 1; }
+
+  header { text-align: center; margin-bottom: 20px; }
+  header h1 { font-size: clamp(1.8rem, 6vw, 2.8rem); font-weight: 900; color: var(--accent); letter-spacing: -1px; }
+  header p { font-size: 0.95rem; color: var(--text-muted); margin-top: 4px; font-weight: 600; }
+
+  .how-to { max-width: 700px; margin: 0 auto 20px; background: var(--card-bg); border: 2px solid var(--card-border); border-radius: var(--radius); overflow: hidden; }
+  .how-to-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; cursor: pointer; user-select: none; }
+  .how-to-header span { font-weight: 800; font-size: 1rem; color: var(--accent); }
+  .how-to-header .arrow { font-size: 0.9rem; color: var(--text-muted); transition: transform 0.2s; }
+  .how-to-header.open .arrow { transform: rotate(180deg); }
+  .how-to-body { display: none; padding: 0 20px 18px; border-top: 2px solid var(--card-border); }
+  .how-to-body.open { display: block; }
+  .how-to-body ol { padding-left: 20px; margin-top: 12px; }
+  .how-to-body li { font-size: 0.95rem; font-weight: 600; color: var(--text); margin-bottom: 8px; line-height: 1.5; }
+  .how-to-body li strong { color: var(--accent); }
+
+  .top-bar { display: flex; justify-content: center; align-items: center; gap: 10px; margin-bottom: 24px; flex-wrap: wrap; }
+
+  .score-item { display: flex; align-items: center; gap: 6px; background: var(--card-bg); border: 2px solid var(--card-border); border-radius: 999px; padding: 6px 16px; font-weight: 700; font-size: 0.95rem; }
+  .score-item .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--correct); }
+
+  .top-btn { font-family: 'Nunito', sans-serif; font-size: 0.88rem; font-weight: 800; padding: 8px 16px; border: 2px solid var(--card-border); border-radius: 999px; background: var(--card-bg); color: var(--text-muted); cursor: pointer; transition: border-color 0.15s, color 0.15s; }
+  .top-btn:hover { border-color: var(--accent-light); color: var(--accent); }
+
+  .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; max-width: 700px; margin: 0 auto 20px; }
+
+  .card { aspect-ratio: 1; background: var(--card-bg); border: 2px solid var(--card-border); border-radius: var(--radius); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s; box-shadow: var(--shadow); user-select: none; }
+  .card:hover:not(.card-add) { transform: translateY(-3px); box-shadow: var(--shadow-hover); border-color: var(--accent-light); }
+  .card .card-num { font-size: clamp(1rem, 3vw, 1.5rem); font-weight: 900; color: var(--accent); }
+  .card .card-check { display: none; font-size: 0.8rem; margin-top: 2px; }
+  .card.done-correct { background: var(--correct-pale); border-color: var(--correct-border); }
+  .card.done-correct .card-num { color: var(--correct); }
+  .card.done-correct .card-check { display: block; }
+
+  .card-add { border-style: dashed; border-color: #90bcd8; background: transparent; box-shadow: none; }
+  .card-add:hover { border-color: var(--accent-light) !important; background: var(--accent-pale) !important; }
+  .card-add .add-icon { font-size: clamp(1.2rem, 3vw, 1.8rem); color: #90bcd8; }
+  .card-add:hover .add-icon { color: var(--accent); }
+
+  .overlay { display: none; position: fixed; inset: 0; background: rgba(10,40,70,0.45); z-index: 100; align-items: center; justify-content: center; padding: 16px; }
+  .overlay.active { display: flex; }
+
+  .modal { background: var(--card-bg); border-radius: 24px; padding: 32px 28px 28px; max-width: 440px; width: 100%; box-shadow: 0 20px 60px rgba(26,111,168,0.2); animation: modalIn 0.25s cubic-bezier(0.34,1.56,0.64,1); position: relative; max-height: 90vh; overflow-y: auto; }
+
+  @keyframes modalIn {
+    from { transform: scale(0.85); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+
+  .modal-title { font-size: 1.1rem; font-weight: 900; color: var(--accent); margin-bottom: 16px; }
+  .modal-question { font-size: clamp(1.05rem, 3vw, 1.2rem); font-weight: 700; line-height: 1.55; color: var(--text); margin-bottom: 22px; }
+
+  .attempts-display { display: flex; gap: 8px; margin-bottom: 14px; }
+  .attempt-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--card-border); transition: background 0.2s; }
+  .attempt-dot.used-wrong { background: #f4a261; }
+
+  .feedback { font-size: 0.95rem; font-weight: 700; min-height: 22px; margin-bottom: 6px; color: var(--text-muted); text-align: center; }
+  .feedback.correct { color: var(--correct); }
+  .feedback.wrong { color: #e07a2f; }
+
+  .input-row { display: flex; gap: 8px; margin-bottom: 10px; }
+
+  .answer-input { flex: 1; font-family: 'Nunito', sans-serif; font-size: 1rem; font-weight: 700; padding: 12px 16px; border: 2px solid var(--card-border); border-radius: 12px; outline: none; background: var(--bg); color: var(--text); transition: border-color 0.2s; }
+  .answer-input:focus { border-color: var(--accent-light); }
+  .answer-input.shake { animation: shake 0.35s; }
+
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    20% { transform: translateX(-6px); }
+    40% { transform: translateX(6px); }
+    60% { transform: translateX(-4px); }
+    80% { transform: translateX(4px); }
+  }
+
+  .btn { font-family: 'Nunito', sans-serif; font-size: 1rem; font-weight: 800; padding: 12px 20px; border: none; border-radius: 12px; cursor: pointer; transition: transform 0.1s; }
+  .btn:active { transform: scale(0.96); }
+  .btn-check { background: var(--accent); color: #fff; white-space: nowrap; }
+  .btn-reveal { width: 100%; background: var(--bg); color: var(--text-muted); border: 2px solid var(--card-border); font-size: 0.9rem; padding: 10px; }
+
+  .btn-close { position: absolute; top: 16px; right: 16px; background: var(--bg); border: none; border-radius: 50%; width: 32px; height: 32px; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text-muted); }
+
+  .solved-box { background: var(--correct-pale); border: 2px solid var(--correct-border); border-radius: 16px; padding: 20px; text-align: center; }
+  .solved-box .solved-emoji { font-size: 2rem; margin-bottom: 6px; }
+  .solved-box .solved-label { font-size: 0.8rem; font-weight: 700; color: var(--correct); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+  .solved-box .solved-answer { font-size: 1.4rem; font-weight: 900; color: var(--correct); }
+
+  .answer-reveal { display: none; background: var(--accent-pale); border: 2px solid var(--accent-light); border-radius: 12px; padding: 14px 18px; margin-top: 10px; text-align: center; }
+  .answer-reveal .reveal-label { font-size: 0.8rem; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 1px; }
+  .answer-reveal .reveal-text { font-size: 1.3rem; font-weight: 900; color: var(--accent); margin-top: 4px; }
+
+  .add-label { font-size: 0.85rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; display: block; }
+  .add-input { width: 100%; font-family: 'Nunito', sans-serif; font-size: 0.98rem; font-weight: 600; padding: 11px 14px; border: 2px solid var(--card-border); border-radius: 12px; outline: none; background: var(--bg); color: var(--text); margin-bottom: 14px; transition: border-color 0.2s; resize: vertical; }
+  .add-input:focus { border-color: var(--accent-light); }
+  .add-hint { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; margin-bottom: 14px; line-height: 1.4; }
+  .add-error { color: #e07a2f; font-size: 0.88rem; font-weight: 700; min-height: 20px; margin-bottom: 8px; }
+  .btn-full { width: 100%; background: var(--accent); color: #fff; padding: 13px; font-size: 1rem; }
+
+  .manage-item { display: flex; align-items: flex-start; gap: 10px; background: var(--bg); border: 2px solid var(--card-border); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; }
+  .manage-num { font-weight: 900; color: var(--accent); font-size: 0.9rem; min-width: 28px; padding-top: 2px; }
+  .manage-info { flex: 1; }
+  .manage-soru { font-size: 0.88rem; font-weight: 700; color: var(--text); line-height: 1.4; margin-bottom: 4px; }
+  .manage-cevap { font-size: 0.82rem; font-weight: 700; color: var(--text-muted); letter-spacing: 1px; }
+  .manage-cevap.revealed { color: var(--accent); letter-spacing: 0; }
+  .manage-actions { display: flex; flex-direction: column; gap: 4px; }
+
+  .icon-btn { background: none; border: 1px solid var(--card-border); border-radius: 8px; padding: 4px 8px; cursor: pointer; font-size: 0.78rem; font-weight: 700; color: var(--text-muted); font-family: 'Nunito', sans-serif; transition: all 0.15s; white-space: nowrap; }
+  .icon-btn:hover { border-color: var(--accent-light); color: var(--accent); }
+  .icon-btn.del:hover { border-color: #e63946; color: #e63946; background: #fde8ea; }
+
+  .manage-empty { text-align: center; color: var(--text-muted); font-weight: 600; font-size: 0.9rem; padding: 20px 0; }
+  .divider { height: 1px; background: var(--card-border); margin: 16px 0; }
+
+  .danger-btn { font-family: 'Nunito', sans-serif; font-size: 0.88rem; font-weight: 800; padding: 10px 18px; border: 2px solid #f4c0c4; border-radius: 12px; background: #fff5f5; color: #c0392b; cursor: pointer; transition: all 0.15s; }
+  .danger-btn:hover { background: #fde8ea; border-color: #e63946; }
+</style>
+</head>
+<body>
+
+<div class="emoji-bg" id="emoji-bg"></div>
+
+<div class="page-content">
+  <header>
+    <h1>Zıpır Bilmeceler!</h1>
+    <p>Kartlara tıkla, bilmeceni çöz, bakalım kaç tanesini bulacaksın!</p>
+  </header>
+
+  <div class="how-to">
+    <div class="how-to-header" id="how-header">
+      <span>📖 Nasıl oynanır?</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="how-to-body" id="how-body">
+      <ol>
+        <li>Bir karta tıkla, bilmece sorusu açılır.</li>
+        <li>Cevabını yaz ve <strong>Dene</strong> butonuna bas.</li>
+        <li><strong>2 deneme hakkın</strong> var — yanlışsa tekrar dene!</li>
+        <li>2 denemeni de kullandıysan <strong>👀 Cevabı Göster</strong> butonu çıkar.</li>
+        <li>Çözdüğün kartlar <strong>yeşile</strong> döner — tekrar tıklayarak soruyu ve cevabı görebilirsin.</li>
+        <li>Kendi bilmeceni eklemek için <strong>＋</strong> kartına tıkla!</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="top-bar">
+    <div class="score-item">
+      <div class="dot"></div>
+      <span id="correct-count">0</span> / <span id="total-count">25</span> çözüldü
+    </div>
+    <button class="top-btn" id="btn-reset">↺ Cevapları Sıfırla</button>
+    <button class="top-btn" id="btn-manage">✏️ Bilmecelerimi Yönet</button>
+  </div>
+
+  <div class="grid" id="grid"></div>
+</div>
+
+<!-- Bilmece Modal -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <button class="btn-close" id="btn-close">✕</button>
+    <div id="modal-content"></div>
+  </div>
+</div>
+
+<!-- Bilmece Ekle Modal -->
+<div class="overlay" id="add-overlay">
+  <div class="modal">
+    <button class="btn-close" id="add-btn-close">✕</button>
+    <div class="modal-title">✏️ Kendi Bilmeceni Ekle</div>
+    <label class="add-label">Bilmece sorusu</label>
+    <textarea class="add-input" id="add-soru" rows="3" placeholder="Örnek: Dişleri var ısırmaz, saçı var taramaz. Bu nedir?"></textarea>
+    <label class="add-label">Cevap</label>
+    <input class="add-input" id="add-cevap" type="text" placeholder="Örnek: Mısır" />
+    <div class="add-hint">İpucu: Sorunun sonuna "Bu nedir?" veya "Bunlar nedir?" eklemeyi unutma!</div>
+    <div class="add-error" id="add-error"></div>
+    <button class="btn btn-full" id="btn-add-save">Bilmecemi Ekle!</button>
+  </div>
+</div>
+
+<!-- Yönet Modal -->
+<div class="overlay" id="manage-overlay">
+  <div class="modal">
+    <button class="btn-close" id="manage-btn-close">✕</button>
+    <div class="modal-title">✏️ Bilmecelerimi Yönet</div>
+    <div id="manage-list"></div>
+    <div class="divider"></div>
+    <button class="danger-btn" id="btn-reset-all">↺ Tüm cevapları sıfırla</button>
+  </div>
+</div>
+
+<script>
+const SABIT = [
+  { soru: "Dişleri var ısırmaz, saçı var taramaz. Bu nedir?", cevap: ["mısır","misir"] },
+  { soru: "Tırmanırsın ama merdiveni yok, tepesinde kar var ama buzdolabı değil. Bu nedir?", cevap: ["dağ","dag"] },
+  { soru: "Evi sırtında, kapısı yok, taşınır ama yorulmaz. Bu nedir?", cevap: ["salyangoz"] },
+  { soru: "Kapıyı açar ama içeri giremez. Bu nedir?", cevap: ["anahtar"] },
+  { soru: "Boynuna sarılır ama sevmez, kışın gelir yazın gider. Bu nedir?", cevap: ["atkı","atki","boyunluk","eşarp","esarp"] },
+  { soru: "Döner ama yorulmaz, üfler ama nefesi yok, yazın en iyi arkadaşın. Bu nedir?", cevap: ["vantilatör","ventilatör","fan"] },
+  { soru: "Soğuğu sever, içine koyarsan tazeler, çıkarırsan yaşlanır. Bu nedir?", cevap: ["buzdolabı","buzdolabi"] },
+  { soru: "Ağlatır ama üzgün değil, kesersin kabahatli sensin. Bu nedir?", cevap: ["soğan","sogan"] },
+  { soru: "Başa giyilir ama şapka değil, gözü korur ama gözlük değil. Bu nedir?", cevap: ["kask","miğfer","migfer"] },
+  { soru: "Başı taçlı, ayakları yok, yerde oturur kral gibi. Bu nedir?", cevap: ["ananas"] },
+  { soru: "Her gün binlerce ayak üstüne basar, hiç şikayet etmez. Bu nedir?", cevap: ["yol","kaldırım","kaldırim"] },
+  { soru: "Ağzı var yemez, karnı var acıkmaz. Bu nedir?", cevap: ["şişe","sise","matara"] },
+  { soru: "Zıplar ama bacağı yok, koşar ama ayağı yok, herkesi peşinden koşturur. Bu nedir?", cevap: ["basketbol topu","top","basketbol"] },
+  { soru: "Ağı var balık tutmaz, topu sever ama kendi tutamaz. Bu nedir?", cevap: ["basket potası","basket potasi","pota","basket"] },
+  { soru: "Gözü var görmez, her şeyi içine alır ama açken işe yaramaz. Bu nedir?", cevap: ["cep"] },
+  { soru: "Doldurursan işe yaramaz, boşaltırsan işe yarar. Bu nedir?", cevap: ["çöp kutusu","cop kutusu","çöp kovası","cop kovasi"] },
+  { soru: "İki kardeş ömür boyu yan yana yaşarlar, hiç buluşamazlar. Bunlar nedir?", cevap: ["yol çizgileri","yol cizgileri","ray","raylar","tren rayları","tren raylari","çizgiler"] },
+  { soru: "Binlerce şarkı bilir, sesi yok, kulağın olmasa işe yaramaz. Bu nedir?", cevap: ["kulaklık","kulaklik"] },
+  { soru: "Konuşmaz ama her şeyi bilir, sormazsan cevap vermez. Bu nedir?", cevap: ["kitap"] },
+  { soru: "Binlerce kelime bilir, tek başına konuşamaz, birisi açmazsa sessiz kalır. Bu nedir?", cevap: ["sözlük","sozluk"] },
+  { soru: "İki ülke arasında durur, ikisine de aittir ikisine de değil. Bu nedir?", cevap: ["sınır","sinir"] },
+  { soru: "Ne kadar hızlı koşarsan o kadar hızlı gelir, dursan o da durur. Bu nedir?", cevap: ["nefes"] },
+  { soru: "Her şeyi bilir ama sormadan konuşmaz, cevaplar ama anlamaz. Bu nedir?", cevap: ["arama motoru","google","yapay zeka"] },
+  { soru: "Herkes onu taşır ama kimse görmez, kaybedersen büyük sorun. Bu nedir?", cevap: ["kimlik","isim","ad"] },
+  { soru: "Ne kadar atarsan o kadar geride bırakırsın. Bu nedir?", cevap: ["adım","adim"] },
+];
+
+const MAX = 50;
+const EMOJIS = ["😄","😂","🤩","😎","🥳","😜","🤪","😁","🎉","⭐","🌟","✨","🎈","🎊","🏀","⚽","🎯","🧩","💡","🌈","🦄","🐬","🐸","🦊","🐙"];
+
+let ekstra = [];
+let state = [];
+let aktif = null;
+
+function normalize(s) {
+  return s.trim().toLowerCase()
+    .replace(/ş/g,"s").replace(/ğ/g,"g").replace(/ü/g,"u")
+    .replace(/ö/g,"o").replace(/ı/g,"i").replace(/ç/g,"c")
+    .replace(/â/g,"a").replace(/î/g,"i").replace(/û/g,"u");
+}
+
+function checkCevap(input, cevaplar) {
+  const n = normalize(input);
+  return cevaplar.some(c => normalize(c) === n);
+}
+
+function tumBilmeceler() { return [...SABIT, ...ekstra]; }
+
+function load() {
+  try { ekstra = JSON.parse(localStorage.getItem("zb_ekstra") || "[]"); } catch(e) { ekstra = []; }
+  try { state = JSON.parse(localStorage.getItem("zb_state") || "[]"); } catch(e) { state = []; }
+  ensureState();
+}
+
+function ensureState() {
+  const tb = tumBilmeceler();
+  while (state.length < tb.length) state.push({ durum: "bekliyor", yanlis: 0 });
+}
+
+function save() {
+  try {
+    localStorage.setItem("zb_ekstra", JSON.stringify(ekstra));
+    localStorage.setItem("zb_state", JSON.stringify(state));
+  } catch(e) {}
+}
+
+function renderEmojis() {
+  const bg = document.getElementById("emoji-bg");
+  bg.innerHTML = "";
+  for (let i = 0; i < 40; i++) {
+    const s = document.createElement("span");
+    s.textContent = EMOJIS[Math.floor(Math.random() * EMOJIS.length)];
+    s.style.left = (Math.random() * 100) + "%";
+    s.style.top = (Math.random() * 100) + "%";
+    s.style.animationDelay = (Math.random() * 8) + "s";
+    s.style.animationDuration = (6 + Math.random() * 6) + "s";
+    s.style.fontSize = (1.2 + Math.random() * 1.4) + "rem";
+    bg.appendChild(s);
+  }
+}
+
+function renderGrid() {
+  const grid = document.getElementById("grid");
+  grid.innerHTML = "";
+  const tb = tumBilmeceler();
+  let dogru = 0;
+
+  tb.forEach((b, i) => {
+    const s = state[i] || { durum: "bekliyor", yanlis: 0 };
+    const solved = s.durum === "dogru" || s.durum === "gosterildi";
+    const card = document.createElement("div");
+    card.className = "card" + (solved ? " done-correct" : "");
+    if (solved) dogru++;
+    card.innerHTML = `<span class="card-num">${i + 1}</span><span class="card-check">${solved ? "✓" : ""}</span>`;
+    card.onclick = () => openModal(i);
+    grid.appendChild(card);
+  });
+
+  if (tb.length < MAX) {
+    const add = document.createElement("div");
+    add.className = "card card-add";
+    add.innerHTML = `<span class="add-icon">＋</span>`;
+    add.onclick = openAddModal;
+    grid.appendChild(add);
+  }
+
+  document.getElementById("correct-count").textContent = dogru;
+  document.getElementById("total-count").textContent = tb.length;
+}
+
+function openModal(i) {
+  aktif = i;
+  const b = tumBilmeceler()[i];
+  if (!state[i]) state[i] = { durum: "bekliyor", yanlis: 0 };
+  const s = state[i];
+  const content = document.getElementById("modal-content");
+
+  if (s.durum === "dogru" || s.durum === "gosterildi") {
+    const cevap = b.cevap[0];
+    content.innerHTML = `
+      <div class="modal-question">${b.soru}</div>
+      <div class="solved-box">
+        <div class="solved-emoji">${s.durum === "dogru" ? "🎉" : "👀"}</div>
+        <div class="solved-label">${s.durum === "dogru" ? "Doğru cevap" : "Cevap"}</div>
+        <div class="solved-answer">${cevap.charAt(0).toUpperCase() + cevap.slice(1)}</div>
+      </div>`;
+    document.getElementById("overlay").classList.add("active");
+    return;
+  }
+
+  content.innerHTML = `
+    <div class="modal-question">${b.soru}</div>
+    <div class="attempts-display" id="attempts-display"></div>
+    <div class="feedback" id="feedback"></div>
+    <div class="input-row" id="input-row">
+      <input class="answer-input" id="answer-input" type="text" placeholder="Cevabın nedir?" autocomplete="off" autocorrect="off" spellcheck="false" />
+      <button class="btn btn-check" id="btn-check">Dene</button>
+    </div>
+    <button class="btn btn-reveal" id="btn-reveal" style="display:none">👀 Cevabı Göster</button>
+    <div class="answer-reveal" id="answer-reveal">
+      <div class="reveal-label">Cevap</div>
+      <div class="reveal-text" id="reveal-text"></div>
+    </div>`;
+
+  renderDots(s.yanlis);
+
+  if (s.yanlis >= 2) {
+    document.getElementById("btn-reveal").style.display = "block";
+    setFeedback("2 hakkını da kullandın. Cevabı görmek ister misin?", "wrong");
+  } else if (s.yanlis > 0) {
+    setFeedback("Bir daha dene!", "wrong");
+  }
+
+  document.getElementById("btn-check").onclick = handleCheck;
+  document.getElementById("answer-input").onkeydown = (e) => { if (e.key === "Enter") handleCheck(); };
+  document.getElementById("btn-reveal").onclick = handleReveal;
+
+  document.getElementById("overlay").classList.add("active");
+  setTimeout(() => { const inp = document.getElementById("answer-input"); if (inp) inp.focus(); }, 100);
+}
+
+function closeModal() {
+  document.getElementById("overlay").classList.remove("active");
+  aktif = null;
+}
+
+function setFeedback(msg, cls) {
+  const fb = document.getElementById("feedback");
+  if (!fb) return;
+  fb.textContent = msg;
+  fb.className = "feedback" + (cls ? " " + cls : "");
+}
+
+function renderDots(yanlis) {
+  const el = document.getElementById("attempts-display");
+  if (!el) return;
+  el.innerHTML = "";
+  for (let i = 0; i < 2; i++) {
+    const d = document.createElement("div");
+    d.className = "attempt-dot" + (i < yanlis ? " used-wrong" : "");
+    el.appendChild(d);
+  }
+}
+
+function handleCheck() {
+  if (aktif === null) return;
+  const b = tumBilmeceler()[aktif];
+  const s = state[aktif];
+  const inp = document.getElementById("answer-input");
+  if (!inp || !inp.value.trim()) return;
+
+  if (checkCevap(inp.value, b.cevap)) {
+    s.durum = "dogru";
+    setFeedback("🎉 Aferin! Doğru!", "correct");
+    document.getElementById("input-row").style.display = "none";
+    document.getElementById("btn-reveal").style.display = "none";
+    save();
+    renderGrid();
+    setTimeout(closeModal, 1200);
+  } else {
+    s.yanlis++;
+    renderDots(s.yanlis);
+    inp.classList.add("shake");
+    setTimeout(() => inp.classList.remove("shake"), 400);
+    inp.value = "";
+    if (s.yanlis >= 2) {
+      setFeedback("2 hakkını da kullandın. Cevabı görmek ister misin?", "wrong");
+      document.getElementById("btn-reveal").style.display = "block";
+    } else {
+      setFeedback("Olmadı, bir daha dene!", "wrong");
+    }
+    save();
+  }
+}
+
+function handleReveal() {
+  if (aktif === null) return;
+  const b = tumBilmeceler()[aktif];
+  const s = state[aktif];
+  const cevap = b.cevap[0];
+  s.durum = "gosterildi";
+  document.getElementById("reveal-text").textContent = cevap.charAt(0).toUpperCase() + cevap.slice(1);
+  document.getElementById("answer-reveal").style.display = "block";
+  document.getElementById("btn-reveal").style.display = "none";
+  document.getElementById("input-row").style.display = "none";
+  setFeedback("", "");
+  save();
+  renderGrid();
+  setTimeout(closeModal, 2200);
+}
+
+function openAddModal() {
+  document.getElementById("add-soru").value = "";
+  document.getElementById("add-cevap").value = "";
+  document.getElementById("add-error").textContent = "";
+  document.getElementById("add-overlay").classList.add("active");
+  setTimeout(() => document.getElementById("add-soru").focus(), 100);
+}
+
+function closeAddModal() { document.getElementById("add-overlay").classList.remove("active"); }
+
+function openManageModal() {
+  renderManageList();
+  document.getElementById("manage-overlay").classList.add("active");
+}
+
+function closeManageModal() { document.getElementById("manage-overlay").classList.remove("active"); }
+
+function renderManageList() {
+  const list = document.getElementById("manage-list");
+  if (ekstra.length === 0) {
+    list.innerHTML = `<div class="manage-empty">Henüz kendi bilmecen yok.<br>Ana sayfadaki <strong>＋</strong> kartına tıklayarak ekleyebilirsin!</div>`;
+    return;
+  }
+  list.innerHTML = "";
+  ekstra.forEach((b, i) => {
+    const idx = SABIT.length + i;
+    const cevap = b.cevap[0];
+    const masked = "•".repeat(Math.min(cevap.length, 8));
+    const div = document.createElement("div");
+    div.className = "manage-item";
+    div.innerHTML = `
+      <span class="manage-num">${idx + 1}.</span>
+      <div class="manage-info">
+        <div class="manage-soru">${b.soru}</div>
+        <div class="manage-cevap" id="mcevap-${i}">${masked}</div>
+      </div>
+      <div class="manage-actions">
+        <button class="icon-btn" id="mbtn-show-${i}">👁 Göster</button>
+        <button class="icon-btn del" data-del="${i}">🗑 Sil</button>
+      </div>`;
+    list.appendChild(div);
+
+    let shown = false;
+    document.getElementById(`mbtn-show-${i}`).onclick = () => {
+      shown = !shown;
+      const el = document.getElementById(`mcevap-${i}`);
+      el.textContent = shown ? (cevap.charAt(0).toUpperCase() + cevap.slice(1)) : masked;
+      el.className = "manage-cevap" + (shown ? " revealed" : "");
+      document.getElementById(`mbtn-show-${i}`).textContent = shown ? "🙈 Gizle" : "👁 Göster";
+    };
+  });
+
+  list.querySelectorAll("[data-del]").forEach(btn => {
+    btn.onclick = () => {
+      const i = parseInt(btn.dataset.del);
+      if (!confirm("Bu bilmece silinsin mi?")) return;
+      ekstra.splice(i, 1);
+      state.splice(SABIT.length + i, 1);
+      save();
+      renderGrid();
+      renderManageList();
+    };
+  });
+}
+
+function doReset() {
+  const tb = tumBilmeceler();
+  state = tb.map(() => ({ durum: "bekliyor", yanlis: 0 }));
+  save();
+  renderGrid();
+}
+
+document.getElementById("btn-reset").onclick = () => {
+  if (!confirm("Tüm cevaplar sıfırlansın mı?")) return;
+  doReset();
+};
+
+document.getElementById("btn-reset-all").onclick = () => {
+  if (!confirm("Tüm cevaplar sıfırlansın mı?")) return;
+  doReset();
+  closeManageModal();
+};
+
+document.getElementById("btn-add-save").onclick = () => {
+  const soru = document.getElementById("add-soru").value.trim();
+  const cevap = document.getElementById("add-cevap").value.trim();
+  const err = document.getElementById("add-error");
+  if (!soru) { err.textContent = "Lütfen bir soru yaz!"; return; }
+  if (!cevap) { err.textContent = "Lütfen cevabı yaz!"; return; }
+  if (tumBilmeceler().length >= MAX) { err.textContent = "Maksimum 50 bilmece eklenebilir!"; return; }
+  err.textContent = "";
+  ekstra.push({ soru, cevap: [cevap.toLowerCase()] });
+  state.push({ durum: "bekliyor", yanlis: 0 });
+  save();
+  closeAddModal();
+  renderGrid();
+};
+
+document.getElementById("btn-close").onclick = closeModal;
+document.getElementById("add-btn-close").onclick = closeAddModal;
+document.getElementById("manage-btn-close").onclick = closeManageModal;
+document.getElementById("btn-manage").onclick = openManageModal;
+document.getElementById("how-header").onclick = function() {
+  document.getElementById("how-body").classList.toggle("open");
+  this.classList.toggle("open");
+};
+document.getElementById("overlay").onclick = (e) => { if (e.target === document.getElementById("overlay")) closeModal(); };
+document.getElementById("add-overlay").onclick = (e) => { if (e.target === document.getElementById("add-overlay")) closeAddModal(); };
+document.getElementById("manage-overlay").onclick = (e) => { if (e.target === document.getElementById("manage-overlay")) closeManageModal(); };
+
+renderEmojis();
+load();
+renderGrid();
+</script>
+</body>
+</html>
